@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>مراجعة الأسئلة والإجابات</title>
+  <style>
+    :root{--bg:#f7f7f7;--card:#fff;--b:#ddd;--muted:#666;--ok:#027a48;--bad:#b42318;}
+    body{font-family:system-ui,Segoe UI,Tahoma,Arial;margin:20px;background:var(--bg)}
+    .card{background:var(--card);border:1px solid var(--b);border-radius:12px;padding:16px;margin-bottom:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select,button{padding:10px;border:1px solid #ccc;border-radius:10px;background:#fff}
+    button{cursor:pointer}
+    button.primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+    .muted{color:var(--muted);font-size:13px}
+    .q{padding:12px;border:1px dashed #ddd;border-radius:12px;background:#fafafa;margin:10px 0}
+    .ans{margin-top:10px;padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff}
+    .ans.ok{border-color:#86efac;background:#f0fdf4;color:var(--ok)}
+    .pill{display:inline-block;padding:6px 10px;border:1px solid #ddd;border-radius:999px;font-size:12px;background:#fff}
+    .kbd{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+    .list{margin-top:8px}
+    .list div{margin:4px 0}
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2 style="margin:0 0 6px">مراجعة الشهادات الاحترافية الأسئلة والإجابات</h2>
+  <div class="muted">هذه الصفحة للمراجعة فقط (عرض السؤال + الإجابة).</div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <input id="search" placeholder="بحث داخل السؤال..." style="min-width:260px">
+    <select id="type">
+      <option value="all">كل الأنواع</option>
+      <option value="tf">صواب/خطأ</option>
+      <option value="mcq">اختيار متعدد</option>
+      <option value="match">توصيل</option>
+    </select>
+
+    <select id="showMode">
+      <option value="hidden">الإجابات مخفية</option>
+      <option value="oneclick">إظهار بزر لكل سؤال</option>
+      <option value="all">إظهار كل الإجابات</option>
+    </select>
+
+    <button class="primary" id="btnRender">تطبيق</button>
+    <span class="pill">عدد الأسئلة: <b id="count">0</b></span>
+  </div>
+  <div class="muted" style="margin-top:8px">
+    تلميح: استخدم البحث + فلتر النوع لتجهيز مراجعة سريعة.
+  </div>
+</div>
+
+<div class="card" id="box"></div>
+
+<script src="questions.js"></script>
+<script>
+  const box = document.getElementById("box");
+  const countEl = document.getElementById("count");
+
+  function norm(s){ return (s||"").toString().toLowerCase().trim(); }
+
+  function answerText(q){
+    if(q.type === "tf"){
+      return q.answer === "T" ? "صواب ✅" : "خطأ ❌";
+    }
+    if(q.type === "mcq"){
+      const idx = q.answer;
+      const choice = q.choices?.[idx] ?? "(غير متوفر)";
+      return `الإجابة الصحيحة: (${idx+1}) ${choice}`;
+    }
+    if(q.type === "match"){
+      // عرض المطابقة نصيًا
+      // answer: [rightIndexForLeft0, ...]
+      const lines = q.matchLeft.map((l,i)=>{
+        const rIdx = q.answer[i];
+        const rTxt = q.matchRight?.[rIdx] ?? "(غير متوفر)";
+        return `${i+1}) ${l}  →  ${rIdx+1}) ${rTxt}`;
+      });
+      return "الإجابات الصحيحة:\n" + lines.join("\n");
+    }
+    return "";
+  }
+
+  function render(){
+    const s = norm(document.getElementById("search").value);
+    const t = document.getElementById("type").value;
+    const mode = document.getElementById("showMode").value;
+
+    const bank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
+    let filtered = bank.filter(q=>{
+      const okType = (t==="all") ? true : q.type === t;
+      const okSearch = !s ? true : norm(q.q).includes(s);
+      return okType && okSearch;
+    });
+
+    countEl.textContent = filtered.length;
+    box.innerHTML = "";
+
+    if(filtered.length === 0){
+      box.innerHTML = `<div class="muted">لا توجد نتائج.</div>`;
+      return;
+    }
+
+    filtered.forEach(q=>{
+      const card = document.createElement("div");
+      card.className = "q";
+
+      const header = document.createElement("div");
+      header.innerHTML = `<b>#${q.id}</b> <span class="pill">${q.type}</span><div style="margin-top:6px">${q.q}</div>`;
+      card.appendChild(header);
+
+      // عرض خيارات MCQ
+      if(q.type === "mcq" && Array.isArray(q.choices)){
+        const list = document.createElement("div");
+        list.className = "list muted";
+        q.choices.forEach((c,i)=>{
+          const d = document.createElement("div");
+          d.textContent = `${i+1}) ${c}`;
+          list.appendChild(d);
+        });
+        card.appendChild(list);
+      }
+
+      // عرض قوائم التوصيل
+      if(q.type === "match"){
+        const left = document.createElement("div");
+        left.className = "muted list";
+        left.innerHTML = `<b>القائمة (أ)</b><br>` + q.matchLeft.map((x,i)=>`${i+1}) ${x}`).join("<br>");
+        const right = document.createElement("div");
+        right.className = "muted list";
+        right.innerHTML = `<b>القائمة (ب)</b><br>` + q.matchRight.map((x,i)=>`${i+1}) ${x}`).join("<br>");
+        const row = document.createElement("div");
+        row.className = "row";
+        row.style.alignItems="flex-start";
+        row.appendChild(left);
+        row.appendChild(right);
+        card.appendChild(row);
+      }
+
+      const ans = document.createElement("pre");
+      ans.className = "ans ok";
+      ans.style.whiteSpace = "pre-wrap";
+      ans.textContent = answerText(q);
+
+      if(mode === "all"){
+        card.appendChild(ans);
+      } else if(mode === "oneclick"){
+        const btn = document.createElement("button");
+        btn.textContent = "إظهار الإجابة";
+        btn.onclick = ()=>{
+          if(ans.parentNode){
+            ans.remove();
+            btn.textContent = "إظهار الإجابة";
+          }else{
+            card.appendChild(ans);
+            btn.textContent = "إخفاء الإجابة";
+          }
+        };
+        card.appendChild(document.createElement("div")).appendChild(btn);
+      } else {
+        // hidden: لا شيء
+        const hint = document.createElement("div");
+        hint.className="muted";
+        hint.textContent="(الإجابة مخفية)";
+        hint.style.marginTop="8px";
+        card.appendChild(hint);
+      }
+
+      box.appendChild(card);
+    });
+  }
+
+  document.getElementById("btnRender").onclick = render;
+  document.getElementById("search").addEventListener("input", ()=>{ /* اختياري: live */ });
+  render();
+</script>
+</body>
+</html>

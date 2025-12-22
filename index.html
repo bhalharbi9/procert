@@ -3,33 +3,204 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>مراجعة الأسئلة والإجابات</title>
+  <title>مراجعة للأختبار النهائي لمقرر التأهيل للشهادات الاحترافية</title>
+
   <style>
-    :root{--bg:#f7f7f7;--card:#fff;--b:#ddd;--muted:#666;--ok:#027a48;--bad:#b42318;}
+    :root{
+      --bg:#f7f7f7;--card:#fff;--b:#ddd;--muted:#666;
+      --ok:#027a48;--bad:#b42318;--pri:#1d4ed8;
+    }
     body{font-family:system-ui,Segoe UI,Tahoma,Arial;margin:20px;background:var(--bg)}
     .card{background:var(--card);border:1px solid var(--b);border-radius:12px;padding:16px;margin-bottom:12px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     input,select,button{padding:10px;border:1px solid #ccc;border-radius:10px;background:#fff}
     button{cursor:pointer}
-    button.primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+    button.primary{background:var(--pri);color:#fff;border-color:var(--pri)}
+    button.danger{background:#b42318;color:#fff;border-color:#b42318}
+    button.soft{background:#fff;border-color:#ddd}
     .muted{color:var(--muted);font-size:13px}
     .q{padding:12px;border:1px dashed #ddd;border-radius:12px;background:#fafafa;margin:10px 0}
+    .q.unanswered{border:2px solid #b42318 !important; background:#fff1f2}
+    .q.answered{border:2px solid #86efac !important; background:#f0fdf4}
     .ans{margin-top:10px;padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff}
     .ans.ok{border-color:#86efac;background:#f0fdf4;color:var(--ok)}
+    .ans.bad{border-color:#fecaca;background:#fff1f2;color:var(--bad)}
     .pill{display:inline-block;padding:6px 10px;border:1px solid #ddd;border-radius:999px;font-size:12px;background:#fff}
+    .hidden{display:none}
+    .split{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
+    .box{flex:1;min-width:260px}
     .kbd{font-family:ui-monospace,Consolas,monospace;font-size:12px}
-    .list{margin-top:8px}
-    .list div{margin:4px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .panel{border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff}
+    .panel h4{margin:0 0 8px;font-size:14px}
+    .small{font-size:12px;color:#666}
+    .warn{color:var(--bad)}
+    .okc{color:var(--ok)}
+    .progressWrap{width:100%;max-width:520px}
+    progress{width:100%;height:14px}
+
+    /* خريطة الأسئلة */
+    .mapWrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+    .mapBtn{
+      width:36px;height:34px;border-radius:10px;border:1px solid #ddd;
+      background:#fff;cursor:pointer;font-size:12px;
+    }
+    .mapBtn.unanswered{border-color:#fecaca;background:#fff1f2;color:#b42318}
+    .mapBtn.answered{border-color:#86efac;background:#f0fdf4;color:#027a48}
+    .mapBtn.active{outline:3px solid rgba(29,78,216,.25);border-color:#1d4ed8}
+
+    /* MATCH: جدول احترافي */
+    .matchHeader{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .matchCols{border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff}
+    .matchCols h4{margin:0 0 8px;font-size:14px}
+    .matchRows{margin-top:10px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;overflow:hidden}
+    .matchRow{display:grid;grid-template-columns:1fr 190px 1fr;gap:10px;padding:10px;border-top:1px solid #f0f0f0;align-items:center}
+    .matchRow:first-child{border-top:none}
+    .matchHint{font-size:12px;color:#666;margin-top:6px}
+    .badgeOk{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid #86efac;background:#f0fdf4;color:#027a48;font-size:12px}
+    .badgeBad{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid #fecaca;background:#fff1f2;color:#b42318;font-size:12px}
+    .tableMini{width:100%;border-collapse:collapse;margin-top:10px}
+    .tableMini th,.tableMini td{border:1px solid #eee;padding:8px;font-size:13px}
+    .tableMini th{background:#fafafa}
+
+    /* زر إنهاء عائم (Sticky) */
+    .stickyFinish{
+      position:fixed;
+      left:18px;
+      bottom:18px;
+      z-index:9999;
+      width:min(520px, calc(100vw - 36px));
+      box-shadow:0 18px 40px rgba(0,0,0,.18);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+      border:1px solid #eee;
+    }
+    .stickyFinish .btn{
+      width:100%;
+      padding:14px 16px;
+      font-weight:900;
+      font-size:16px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+    .stickyHint{margin:0 0 10px;font-size:12px;color:#666;line-height:1.5}
+    .spacerBottom{height:120px} /* حتى لا يغطي الزر العائم آخر سؤال */
+
+    /* إخفاء كل عناصر الاختبار في وضع المراجعة */
+    .test-only.hidden-by-mode{display:none !important;}
   </style>
 </head>
+
 <body>
 
 <div class="card">
-  <h2 style="margin:0 0 6px">مراجعة الشهادات الاحترافية الأسئلة والإجابات</h2>
-  <div class="muted">هذه الصفحة للمراجعة فقط (عرض السؤال + الإجابة).</div>
+  <h2 style="margin:0 0 6px">مراجعة للأختبار النهائي لمقرر التأهيل للشهادات الاحترافية</h2>
 </div>
 
 <div class="card">
+  <div class="row">
+    <button class="primary" onclick="setMode('review')">وضع المراجعة</button>
+    <button class="primary" onclick="setMode('test')">وضع الاختبار (40 سؤال)</button>
+    <span class="pill">الوضع الحالي: <b id="modeBadge">مراجعة</b></span>
+  </div>
+</div>
+
+<!-- زر إنهاء عائم (يظهر فقط في الاختبار) -->
+<div id="stickyFinish" class="stickyFinish test-only hidden-by-mode hidden">
+  <p class="stickyHint">يمكنك إنهاء الاختبار في أي وقت. الأسئلة غير المجابة تُحسب (0).</p>
+  <button type="button" class="danger btn" onclick="requestFinish('manual')">✅ إنهاء الاختبار وإظهار النتيجة</button>
+</div>
+
+<!-- اختبار -->
+<div class="card hidden test-only hidden-by-mode" id="testCard">
+  <div class="split">
+    <div class="box">
+      <h3 style="margin:0 0 6px">اختبار 40 سؤال منوّعة</h3>
+      <div class="muted">16 صواب/خطأ — 16 اختيار متعدد — 8 توصيل</div>
+
+
+
+      <div class="row" style="margin-top:10px">
+        <label class="muted">المدة (دقائق):</label>
+        <input id="durationMin" type="number" min="1" value="30" style="width:90px">
+        <label class="row" style="gap:6px">
+          <input type="checkbox" id="autoRetry">
+          <span class="muted">إعادة تلقائية بعد النتيجة</span>
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <span class="pill">الوقت المتبقي: <b id="timeLeft">--:--</b></span>
+        <span class="pill">عدد الأسئلة: <b id="tCount">0</b></span>
+
+        <div class="progressWrap">
+          <progress id="prog" value="0" max="40"></progress>
+          <div class="muted">
+            التقدم: <b id="progTxt">0/40</b> — <b id="progPct">0%</b>
+          </div>
+        </div>
+      </div>
+
+      <!-- خريطة الأسئلة -->
+      <div class="panel" style="margin-top:10px">
+        <h4>خريطة الأسئلة</h4>
+        <div class="small">اضغط على رقم السؤال للانتقال له (أخضر=مجاب، أحمر=غير مجاب).</div>
+        <div id="mapWrap" class="mapWrap"></div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button class="primary" onclick="startTest(true)">بدء/محاولة جديدة</button>
+        <button class="soft" id="btnResume" onclick="resumeAttempt()" style="display:none">استئناف المحاولة السابقة</button>
+      </div>
+
+      <div class="ans bad hidden" id="unansweredBox"></div>
+      <div class="ans ok hidden" id="resumeInfo"></div>
+
+      <div id="testBox"></div>
+
+      <!-- زر إنهاء أسفل الأسئلة (يظهر فقط في الاختبار) -->
+      <div class="panel test-only hidden-by-mode" style="margin-top:12px">
+        <div class="row" style="justify-content:space-between">
+          <div class="small">وصلت لنهاية الأسئلة — يمكنك إنهاء الاختبار الآن.</div>
+          <button type="button" class="danger" style="padding:12px 18px;font-weight:900;font-size:15px;border-radius:14px"
+                  onclick="requestFinish('manual')">
+            ✅ إنهاء الاختبار وإظهار النتيجة
+          </button>
+        </div>
+      </div>
+
+      <div class="ans ok hidden" id="resultBox"></div>
+
+      <div class="panel hidden" id="detailPanel">
+        <h4 style="margin:0 0 8px">تفصيل الدرجات لكل سؤال</h4>
+        <div class="muted">درجة كل سؤال = 1 (المجموع 40) — النسبة = 100%</div>
+        <div id="detailBox"></div>
+      </div>
+
+      <div class="row hidden" id="resultActions" style="margin-top:10px">
+        <button class="primary" onclick="restartTest()">إعادة اختبار بأسئلة مختلفة</button>
+        <input type="hidden" class="soft" onclick="downloadLastResultJSON()">
+      </div>
+
+      <div class="spacerBottom"></div>
+    </div>
+
+    <div class="box">
+      <h3 style="margin:0 0 6px">تحليل النتيجة</h3>
+      <div class="muted">يظهر بعد إنهاء الاختبار</div>
+      <div class="ans hidden" id="analysisBox"></div>
+
+
+    </div>
+  </div>
+</div>
+
+<!-- مراجعة -->
+<div class="card" id="reviewCard">
   <div class="row">
     <input id="search" placeholder="بحث داخل السؤال..." style="min-width:260px">
     <select id="type">
@@ -41,141 +212,720 @@
 
     <select id="showMode">
       <option value="hidden">الإجابات مخفية</option>
-      <option value="oneclick">إظهار بزر لكل سؤال</option>
-      <option value="all">إظهار كل الإجابات</option>
+      <option value="oneclick">إظهار بزر</option>
+      <option value="all">إظهار الكل</option>
     </select>
 
-    <button class="primary" id="btnRender">تطبيق</button>
+    <button class="primary" onclick="renderReview()">تطبيق</button>
     <span class="pill">عدد الأسئلة: <b id="count">0</b></span>
   </div>
-  <div class="muted" style="margin-top:8px">
-    تلميح: استخدم البحث + فلتر النوع لتجهيز مراجعة سريعة.
-  </div>
-</div>
 
-<div class="card" id="box"></div>
+  <div class="muted" style="margin-top:8px">
+    • في الاختيار المتعدد تظهر <b>الخيارات دائمًا</b><br>
+    • في التوصيل (المراجعة): (ب) تظهر <b>عموديًا</b>
+  </div>
+
+  <div id="reviewBox"></div>
+</div>
 
 <script src="questions.js"></script>
 <script>
-  const box = document.getElementById("box");
-  const countEl = document.getElementById("count");
+/* ========= LocalStorage Keys ========= */
+const LS_LAST = "CERTQUIZ_LAST_RESULT_V2";
+const LS_ATTEMPT = "CERTQUIZ_ACTIVE_ATTEMPT_V1";
 
-  function norm(s){ return (s||"").toString().toLowerCase().trim(); }
+/* ========= أدوات عامة ========= */
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function pickN(arr,n){ return shuffle(arr).slice(0, Math.min(n, arr.length)); }
+function fmt(sec){
+  const m=Math.floor(sec/60), s=sec%60;
+  return String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+}
+function escapeHtml(s){
+  return (s||"").toString()
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
 
-  function answerText(q){
-    if(q.type === "tf"){
-      return q.answer === "T" ? "صواب ✅" : "خطأ ❌";
+/* ========= اختيار 40 منوّعة ========= */
+function pickMixed40(bank){
+  const tf = pickN(bank.filter(q=>q.type==="tf"), 16);
+  const mcq = pickN(bank.filter(q=>q.type==="mcq"), 16);
+  const match = pickN(bank.filter(q=>q.type==="match"), 8);
+
+  let picked = [...tf, ...mcq, ...match];
+  if(picked.length < 40){
+    const remaining = bank.filter(q => !picked.some(p=>p.id===q.id));
+    picked = picked.concat(pickN(remaining, 40 - picked.length));
+  }
+  return shuffle(picked).slice(0,40);
+}
+
+/* ========= التحكم بالوضع ========= */
+function setMode(mode){
+  const isTest = (mode === "test");
+  document.getElementById("modeBadge").textContent = isTest ? "اختبار" : "مراجعة";
+
+  // toggle cards
+  document.getElementById("reviewCard").classList.toggle("hidden", isTest);
+  document.getElementById("testCard").classList.toggle("hidden", !isTest);
+
+  // toggle test-only blocks (including sticky finish)
+  document.querySelectorAll(".test-only").forEach(el=>{
+    el.classList.toggle("hidden-by-mode", !isTest);
+    // also keep hidden class synced for sticky
+    if(el.id === "stickyFinish"){
+      el.classList.toggle("hidden", !isTest);
     }
-    if(q.type === "mcq"){
-      const idx = q.answer;
-      const choice = q.choices?.[idx] ?? "(غير متوفر)";
-      return `الإجابة الصحيحة: (${idx+1}) ${choice}`;
+  });
+
+  if(isTest) prepareResumeUI();
+}
+
+/* ========= وضع الاختبار ========= */
+let testQuestions = [];
+let userAnswers = {};
+let timerSec = 0;
+let timerInt = null;
+
+function startTimer(){
+  const mins = Math.max(1, Number(durationMin.value || 30));
+  if(!timerSec || timerSec > mins*60) timerSec = mins*60;
+
+  if(timerInt) clearInterval(timerInt);
+  timeLeft.textContent = fmt(timerSec);
+
+  timerInt = setInterval(()=>{
+    timerSec--;
+    timeLeft.textContent = fmt(Math.max(0,timerSec));
+    saveAttempt();
+    if(timerSec <= 0){
+      clearInterval(timerInt);
+      requestFinish('timeout');
     }
-    if(q.type === "match"){
-      // عرض المطابقة نصيًا
-      // answer: [rightIndexForLeft0, ...]
-      const lines = q.matchLeft.map((l,i)=>{
-        const rIdx = q.answer[i];
-        const rTxt = q.matchRight?.[rIdx] ?? "(غير متوفر)";
-        return `${i+1}) ${l}  →  ${rIdx+1}) ${rTxt}`;
-      });
-      return "الإجابات الصحيحة:\n" + lines.join("\n");
-    }
-    return "";
+  }, 1000);
+}
+
+/* ===== خريطة الأسئلة ===== */
+function renderMap(){
+  const wrap = document.getElementById("mapWrap");
+  wrap.innerHTML = "";
+  for(let i=0;i<testQuestions.length;i++){
+    const b=document.createElement("button");
+    b.className="mapBtn unanswered";
+    b.textContent = String(i+1);
+    b.onclick=()=>goToQ(i);
+    b.id="map_"+i;
+    wrap.appendChild(b);
+  }
+  updateMap();
+}
+function updateMap(activeIdx=null){
+  for(let i=0;i<testQuestions.length;i++){
+    const q=testQuestions[i];
+    const btn=document.getElementById("map_"+i);
+    if(!btn) continue;
+    const ok=isAnswered(q,i);
+    btn.classList.toggle("answered", ok);
+    btn.classList.toggle("unanswered", !ok);
+    btn.classList.toggle("active", activeIdx===i);
+  }
+}
+function bindActiveOnScroll(){
+  const handler = ()=>{
+    const tops = testQuestions.map((_,i)=>{
+      const el=document.getElementById("tq_"+i);
+      if(!el) return {i,top:999999};
+      return {i,top:Math.abs(el.getBoundingClientRect().top - 20)};
+    });
+    tops.sort((a,b)=>a.top-b.top);
+    const active = tops[0]?.i ?? null;
+    updateMap(active);
+  };
+  window.removeEventListener("scroll", window.__mapScrollHandler||(()=>{}));
+  window.__mapScrollHandler = handler;
+  window.addEventListener("scroll", handler, {passive:true});
+}
+
+/* ===== رسم سؤال ===== */
+function renderTestQuestion(q, idx){
+  const d=document.createElement("div");
+  d.className="q unanswered";
+  d.id = "tq_"+idx;
+
+  d.innerHTML=`<b>${idx+1})</b> ${q.q}`;
+
+  const markChanged = ()=>{
+    updateQuestionState(idx);
+    updateProgress();
+    updateMap();
+    saveAttempt();
+  };
+
+  if(q.type==="tf"){
+    ["T","F"].forEach(v=>{
+      const l=document.createElement("label");
+      l.innerHTML=`<br><input type="radio" name="q${idx}" value="${v}"> ${v==="T"?"صواب":"خطأ"}`;
+      l.querySelector("input").onchange=e=>{ userAnswers[idx]=e.target.value; markChanged(); };
+      d.appendChild(l);
+    });
   }
 
-  function render(){
-    const s = norm(document.getElementById("search").value);
-    const t = document.getElementById("type").value;
-    const mode = document.getElementById("showMode").value;
+  if(q.type==="mcq"){
+    (q.choices||[]).forEach((c,i)=>{
+      const l=document.createElement("label");
+      l.innerHTML=`<br><input type="radio" name="q${idx}" value="${i}"> ${c}`;
+      l.querySelector("input").onchange=e=>{ userAnswers[idx]=Number(e.target.value); markChanged(); };
+      d.appendChild(l);
+    });
+  }
 
-    const bank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
-    let filtered = bank.filter(q=>{
-      const okType = (t==="all") ? true : q.type === t;
-      const okSearch = !s ? true : norm(q.q).includes(s);
-      return okType && okSearch;
+  if(q.type==="match"){
+    const map = new Array((q.matchLeft||[]).length).fill(null);
+
+    // Header: (أ) و(ب) جنب بعض (مرجع)
+    const header = document.createElement("div");
+    header.className = "matchHeader";
+
+    const colA = document.createElement("div");
+    colA.className = "matchCols";
+    colA.innerHTML = `<h4>القائمة (أ)</h4>` + (q.matchLeft||[])
+      .map((x,i)=>`${i+1}) ${escapeHtml(x)}`).join("<br>");
+
+    const colB = document.createElement("div");
+    colB.className = "matchCols";
+    colB.innerHTML = `<h4>القائمة (ب)</h4>` + (q.matchRight||[])
+      .map((x,i)=>`${i+1}) ${escapeHtml(x)}`).join("<br>");
+
+    header.appendChild(colA);
+    header.appendChild(colB);
+    d.appendChild(header);
+
+    const hint = document.createElement("div");
+    hint.className = "matchHint";
+    hint.textContent = "اختر رقم العنصر المطابق من القائمة (ب) لكل بند في (أ):";
+    d.appendChild(hint);
+
+    // Rows: (أ | اختيار | نص من ب)
+    const rowsBox = document.createElement("div");
+    rowsBox.className = "matchRows";
+
+    (q.matchLeft||[]).forEach((lft, j)=>{
+      const row = document.createElement("div");
+      row.className = "matchRow";
+
+      const aCell = document.createElement("div");
+      aCell.innerHTML = `<b>${j+1})</b> ${escapeHtml(lft)}`;
+
+      const sel = document.createElement("select");
+      sel.innerHTML =
+        `<option value="">اختر من القائمة (ب)</option>` +
+        (q.matchRight||[]).map((_,k)=>`<option value="${k}">${k+1}</option>`).join("");
+
+      const bCell = document.createElement("div");
+      bCell.className = "muted";
+      bCell.textContent = "—";
+
+      sel.onchange = ()=>{
+        map[j] = (sel.value==="" ? null : Number(sel.value));
+        userAnswers[idx] = map;
+
+        if(map[j] === null) bCell.textContent = "—";
+        else bCell.textContent = `${map[j]+1}) ${(q.matchRight||[])[map[j]] || ""}`;
+
+        markChanged();
+      };
+
+      row.appendChild(aCell);
+      row.appendChild(sel);
+      row.appendChild(bCell);
+      rowsBox.appendChild(row);
     });
 
-    countEl.textContent = filtered.length;
-    box.innerHTML = "";
+    d.appendChild(rowsBox);
+  }
 
-    if(filtered.length === 0){
-      box.innerHTML = `<div class="muted">لا توجد نتائج.</div>`;
-      return;
-    }
+  return d;
+}
 
-    filtered.forEach(q=>{
-      const card = document.createElement("div");
-      card.className = "q";
+/* ===== تلوين + تقدم ===== */
+function isAnswered(q, idx){
+  const a = userAnswers[idx];
+  if(q.type==="tf") return a==="T"||a==="F";
+  if(q.type==="mcq") return typeof a==="number";
+  if(q.type==="match"){
+    if(!Array.isArray(a)) return false;
+    return Array.isArray(q.answer) && a.length === q.answer.length && a.every(v => typeof v==="number");
+  }
+  return false;
+}
+function updateQuestionState(idx){
+  const q = testQuestions[idx];
+  const el = document.getElementById("tq_"+idx);
+  if(!q || !el) return;
+  const ok = isAnswered(q, idx);
+  el.classList.toggle("unanswered", !ok);
+  el.classList.toggle("answered", ok);
+}
+function updateProgress(){
+  const total = testQuestions.length || 40;
+  let answered = 0;
+  testQuestions.forEach((q,i)=>{ if(isAnswered(q,i)) answered++; });
 
-      const header = document.createElement("div");
-      header.innerHTML = `<b>#${q.id}</b> <span class="pill">${q.type}</span><div style="margin-top:6px">${q.q}</div>`;
-      card.appendChild(header);
+  prog.max = total;
+  prog.value = answered;
+  progTxt.textContent = `${answered}/${total}`;
+  progPct.textContent = `${Math.round((answered/total)*100)}%`;
+}
 
-      // عرض خيارات MCQ
-      if(q.type === "mcq" && Array.isArray(q.choices)){
-        const list = document.createElement("div");
-        list.className = "list muted";
-        q.choices.forEach((c,i)=>{
-          const d = document.createElement("div");
-          d.textContent = `${i+1}) ${c}`;
-          list.appendChild(d);
+/* ===== غير مجاب ===== */
+function getUnanswered(){
+  const list=[];
+  testQuestions.forEach((q,i)=>{ if(!isAnswered(q,i)) list.push(i); });
+  return list;
+}
+function showUnanswered(list){
+  if(!list || list.length === 0){ hideUnanswered(); return; }
+
+  const items = list.map(i=>{
+    const n=i+1;
+    return `<button class="soft" style="margin:4px;padding:8px" onclick="goToQ(${i})">سؤال ${n}</button>`;
+  }).join(" ");
+
+  unansweredBox.innerHTML = `
+    <b class="warn">تنبيه: لديك أسئلة غير مجابة.</b><br>
+    الأسئلة غير المجابة (${list.length}):<br>${items}
+  `;
+  unansweredBox.classList.remove("hidden");
+}
+function hideUnanswered(){
+  unansweredBox.classList.add("hidden");
+  unansweredBox.innerHTML = "";
+}
+function goToQ(i){
+  const el=document.getElementById("tq_"+i);
+  if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+/* ===== حفظ/استرجاع المحاولة ===== */
+function saveAttempt(){
+  if(!testQuestions.length) return;
+  const payload = {
+    v:1,
+    saved_at: Date.now(),
+    durationMin: Number(durationMin.value || 30),
+    timerSec,
+    qids: testQuestions.map(q=>q.id),
+    answers: userAnswers
+  };
+  localStorage.setItem(LS_ATTEMPT, JSON.stringify(payload));
+  prepareResumeUI();
+}
+function loadAttempt(){
+  try{ const raw=localStorage.getItem(LS_ATTEMPT); return raw?JSON.parse(raw):null; }
+  catch(e){ return null; }
+}
+function clearAttempt(){
+  localStorage.removeItem(LS_ATTEMPT);
+  prepareResumeUI();
+}
+function prepareResumeUI(){
+  const a = loadAttempt();
+  btnResume.style.display = a ? "inline-block" : "none";
+  if(!a){ resumeInfo.classList.add("hidden"); return; }
+  const dt = new Date(a.saved_at).toLocaleString("ar-SA");
+  resumeInfo.innerHTML = `📌 توجد محاولة محفوظة بتاريخ: <b>${dt}</b> — يمكنك استئنافها.`;
+  resumeInfo.classList.remove("hidden");
+}
+function rehydrateInputsFromAnswers(){
+  testQuestions.forEach((q,idx)=>{
+    const a = userAnswers[idx];
+    if(q.type==="tf"){
+      if(a==="T"||a==="F"){
+        const radio = document.querySelector(`input[name="q${idx}"][value="${a}"]`);
+        if(radio) radio.checked = true;
+      }
+    }else if(q.type==="mcq"){
+      if(typeof a==="number"){
+        const radio = document.querySelector(`input[name="q${idx}"][value="${a}"]`);
+        if(radio) radio.checked = true;
+      }
+    }else if(q.type==="match"){
+      if(Array.isArray(a)){
+        const qEl = document.getElementById("tq_"+idx);
+        if(!qEl) return;
+        const selects = qEl.querySelectorAll("select");
+        let sIndex = 0;
+        selects.forEach(sel=>{
+          const v = a[sIndex];
+          sel.value = (typeof v==="number") ? String(v) : "";
+          sIndex++;
         });
-        card.appendChild(list);
       }
+    }
+  });
+}
+function resumeAttempt(){
+  const a = loadAttempt();
+  if(!a){ alert("لا توجد محاولة محفوظة."); return; }
 
-      // عرض قوائم التوصيل
-      if(q.type === "match"){
-        const left = document.createElement("div");
-        left.className = "muted list";
-        left.innerHTML = `<b>القائمة (أ)</b><br>` + q.matchLeft.map((x,i)=>`${i+1}) ${x}`).join("<br>");
-        const right = document.createElement("div");
-        right.className = "muted list";
-        right.innerHTML = `<b>القائمة (ب)</b><br>` + q.matchRight.map((x,i)=>`${i+1}) ${x}`).join("<br>");
-        const row = document.createElement("div");
-        row.className = "row";
-        row.style.alignItems="flex-start";
-        row.appendChild(left);
-        row.appendChild(right);
-        card.appendChild(row);
-      }
+  const bank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
+  const byId = new Map(bank.map(q=>[q.id,q]));
+  const qs = a.qids.map(id=>byId.get(id)).filter(Boolean);
 
-      const ans = document.createElement("pre");
-      ans.className = "ans ok";
-      ans.style.whiteSpace = "pre-wrap";
-      ans.textContent = answerText(q);
-
-      if(mode === "all"){
-        card.appendChild(ans);
-      } else if(mode === "oneclick"){
-        const btn = document.createElement("button");
-        btn.textContent = "إظهار الإجابة";
-        btn.onclick = ()=>{
-          if(ans.parentNode){
-            ans.remove();
-            btn.textContent = "إظهار الإجابة";
-          }else{
-            card.appendChild(ans);
-            btn.textContent = "إخفاء الإجابة";
-          }
-        };
-        card.appendChild(document.createElement("div")).appendChild(btn);
-      } else {
-        // hidden: لا شيء
-        const hint = document.createElement("div");
-        hint.className="muted";
-        hint.textContent="(الإجابة مخفية)";
-        hint.style.marginTop="8px";
-        card.appendChild(hint);
-      }
-
-      box.appendChild(card);
-    });
+  if(qs.length===0){
+    alert("تعذر استرجاع الأسئلة (تأكد من questions.js).");
+    clearAttempt(); return;
   }
 
-  document.getElementById("btnRender").onclick = render;
-  document.getElementById("search").addEventListener("input", ()=>{ /* اختياري: live */ });
-  render();
+  testQuestions = qs;
+  userAnswers = a.answers || {};
+  timerSec = Number(a.timerSec || (Number(a.durationMin||30)*60));
+  durationMin.value = Number(a.durationMin || 30);
+
+  testBox.innerHTML="";
+  tCount.textContent = testQuestions.length;
+  testQuestions.forEach((q,i)=> testBox.appendChild(renderTestQuestion(q,i)));
+
+  rehydrateInputsFromAnswers();
+
+  for(let i=0;i<testQuestions.length;i++) updateQuestionState(i);
+  updateProgress();
+  renderMap();
+  bindActiveOnScroll();
+
+  hideUnanswered();
+  document.getElementById("resultBox").classList.add("hidden");
+  document.getElementById("detailPanel").classList.add("hidden");
+  document.getElementById("resultActions").classList.add("hidden");
+
+  startTimer();
+  setMode('test');
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ===== بدء محاولة جديدة ===== */
+function startTest(newAttempt=true){
+  const bank = Array.isArray(window.QUESTION_BANK) ? window.QUESTION_BANK : [];
+  if(bank.length < 40){
+    alert("بنك الأسئلة غير كافٍ (يلزم 40 سؤال على الأقل).");
+    return;
+  }
+
+  if(newAttempt){
+    const a = loadAttempt();
+    if(a){
+      const ok = confirm("توجد محاولة محفوظة. هل تريد بدء محاولة جديدة وحذف المحاولة السابقة؟");
+      if(!ok) return;
+      clearAttempt();
+    }
+  }
+
+  testQuestions = pickMixed40(bank);
+  userAnswers = {};
+  timerSec = Math.max(1, Number(durationMin.value||30)) * 60;
+
+  hideUnanswered();
+  document.getElementById("resultBox").classList.add("hidden");
+  document.getElementById("detailPanel").classList.add("hidden");
+  document.getElementById("analysisBox").classList.add("hidden");
+  document.getElementById("resultActions").classList.add("hidden");
+
+  testBox.innerHTML="";
+  tCount.textContent = testQuestions.length;
+  testQuestions.forEach((q,i)=> testBox.appendChild(renderTestQuestion(q,i)));
+
+  for(let i=0;i<testQuestions.length;i++) updateQuestionState(i);
+  updateProgress();
+
+  renderMap();
+  bindActiveOnScroll();
+
+  saveAttempt();
+  startTimer();
+  setMode('test');
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ===== إنهاء الاختبار (يسمح حتى لو غير مكتمل) ===== */
+function requestFinish(reason){
+  const un = getUnanswered();
+
+  let msg = (reason==="timeout")
+    ? "انتهى الوقت. هل تريد إنهاء الاختبار الآن؟"
+    : "هل تريد إنهاء الاختبار وإظهار النتيجة؟";
+
+  if(un.length > 0){
+    msg += `\n\nتنبيه: لديك ${un.length} سؤال/أسئلة غير مجابة.\nسيتم احتسابها (0) درجة.`;
+    showUnanswered(un);
+  } else {
+    hideUnanswered();
+  }
+
+  if(confirm(msg)){
+    finishTest(reason);
+  }
+}
+
+/* ===== آخر نتيجة (للتنزيل JSON فقط) ===== */
+function loadLastResult(){
+  try{ const raw=localStorage.getItem(LS_LAST); return raw?JSON.parse(raw):null; }
+  catch(e){ return null; }
+}
+function saveLastResult(obj){
+  localStorage.setItem(LS_LAST, JSON.stringify(obj));
+}
+function downloadJSON(obj, filename){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function downloadLastResultJSON(){
+  const r = loadLastResult();
+  if(!r){ alert("لا توجد نتيجة محفوظة للتنزيل."); return; }
+  const ts = (r.finished_at || Date.now());
+  const fn = `quiz_result_${new Date(ts).toISOString().slice(0,19).replaceAll(":","-")}.json`;
+  downloadJSON(r, fn);
+}
+
+/* ===== نتيجة + جدول التفاصيل + تحليل ===== */
+function finishTest(reason){
+  try{
+    if(timerInt) clearInterval(timerInt);
+
+    const resultBoxEl     = document.getElementById("resultBox");
+    const detailPanelEl   = document.getElementById("detailPanel");
+    const detailBoxEl     = document.getElementById("detailBox");
+    const analysisBoxEl   = document.getElementById("analysisBox");
+    const resultActionsEl = document.getElementById("resultActions");
+
+    // تفاصيل كل سؤال (غير المجاب = 0)
+    const details = testQuestions.map((q,i)=>{
+      const a = userAnswers[i];
+      let ok=false;
+
+      if(q.type==="tf") ok = (a===q.answer);
+      else if(q.type==="mcq") ok = (a===q.answer);
+      else if(q.type==="match"){
+        ok = Array.isArray(a) &&
+             Array.isArray(q.answer) &&
+             a.length === q.answer.length &&
+             a.every((v,j)=>v===q.answer[j]);
+      }
+      return { n:i+1, type:q.type, ok, score: ok ? 1 : 0 };
+    });
+
+    const totalScore = details.reduce((s,x)=>s+x.score,0); // من 40
+    const percent100 = Math.round((totalScore/40)*100);    // من 100
+    const unCount = getUnanswered().length;
+
+    // حفظ آخر نتيجة (للـ JSON)
+    const payload = {
+      v: 1,
+      finished_at: Date.now(),
+      reason: reason,
+      total_questions: 40,
+      score_40: totalScore,
+      percent_100: percent100,
+      unanswered: unCount,
+      breakdown: {
+        tf: details.filter(d=>d.type==="tf").reduce((s,x)=>s+x.score,0),
+        mcq: details.filter(d=>d.type==="mcq").reduce((s,x)=>s+x.score,0),
+        match: details.filter(d=>d.type==="match").reduce((s,x)=>s+x.score,0),
+      },
+      details: details
+    };
+    saveLastResult(payload);
+
+    // عرض النتيجة
+    resultBoxEl.innerHTML =
+      `✅ <b>انتهى الاختبار</b><br>
+       الدرجة: <b>${totalScore} / 40</b><br>
+       النسبة: <b>${percent100}%</b><br>
+       غير مجاب: <b>${unCount}</b> سؤال`;
+    resultBoxEl.classList.remove("hidden");
+
+    // جدول التفاصيل
+    const tbl = `
+      <table class="tableMini">
+        <thead>
+          <tr><th>#</th><th>النوع</th><th>الحالة</th><th>الدرجة</th></tr>
+        </thead>
+        <tbody>
+          ${details.map(x=>`
+            <tr>
+              <td>${x.n}</td>
+              <td>${String(x.type).toUpperCase()}</td>
+              <td>${x.ok ? '<span class="badgeOk">صحيح</span>' : '<span class="badgeBad">خطأ</span>'}</td>
+              <td><b>${x.score}</b></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+    detailBoxEl.innerHTML = tbl;
+    detailPanelEl.classList.remove("hidden");
+
+    // تحليل حسب النوع
+    const tfT = details.filter(d=>d.type==="tf");
+    const mcT = details.filter(d=>d.type==="mcq");
+    const mtT = details.filter(d=>d.type==="match");
+    const sum = arr => arr.reduce((s,x)=>s+x.score,0);
+    const pct = (s,t)=> t? Math.round((s/t)*100) : 0;
+
+    const tfS = sum(tfT), mcS=sum(mcT), mS=sum(mtT);
+    analysisBoxEl.innerHTML =
+      `📊 <b>تحليل حسب النوع</b><br><br>
+       صواب/خطأ: <b>${tfS}/${tfT.length}</b> — <b>${pct(tfS, tfT.length)}%</b><br>
+       اختيار متعدد: <b>${mcS}/${mcT.length}</b> — <b>${pct(mcS, mcT.length)}%</b><br>
+       توصيل: <b>${mS}/${mtT.length}</b> — <b>${pct(mS, mtT.length)}%</b>`;
+    analysisBoxEl.classList.remove("hidden");
+
+    // أزرار بعد النتيجة
+    resultActionsEl.classList.remove("hidden");
+
+    // إنهاء/مسح محاولة محفوظة
+    if(typeof clearAttempt === "function") clearAttempt();
+
+    // سكرول للنتيجة
+    resultBoxEl.scrollIntoView({behavior:"smooth", block:"start"});
+
+    // إعادة تلقائية
+    if(autoRetry.checked) setTimeout(()=>restartTest(), 1200);
+
+  }catch(err){
+    console.error(err);
+    alert("حدث خطأ داخل finishTest. افتح Console (F12) وشوف الخطأ.");
+  }
+}
+
+function restartTest(){ startTest(true); }
+
+/* ========= وضع المراجعة ========= */
+function answerText(q){
+  if(q.type==="tf") return q.answer==="T"?"صواب ✅":"خطأ ❌";
+  if(q.type==="mcq"){
+    const idx=q.answer;
+    const choice=q.choices?.[idx] ?? "(غير متوفر)";
+    return `الإجابة الصحيحة: (${idx+1}) ${choice}`;
+  }
+  if(q.type==="match"){
+    const lines=(q.matchLeft||[]).map((l,i)=>{
+      const rIdx=q.answer[i];
+      const rTxt=q.matchRight?.[rIdx] ?? "(غير متوفر)";
+      return `${i+1}) ${l} → ${rIdx+1}) ${rTxt}`;
+    });
+    return "الإجابات الصحيحة:\n"+lines.join("\n");
+  }
+  return "";
+}
+
+function renderReview(){
+  const s=(search.value||"").toLowerCase().trim();
+  const t=type.value;
+  const mode=showMode.value;
+
+  const bank=Array.isArray(window.QUESTION_BANK)?window.QUESTION_BANK:[];
+  const filtered=bank.filter(q=>{
+    const okType=(t==="all")?true:q.type===t;
+    const okSearch=!s?true:(q.q||"").toLowerCase().includes(s);
+    return okType && okSearch;
+  });
+
+  count.textContent=filtered.length;
+  reviewBox.innerHTML="";
+
+  if(filtered.length===0){
+    reviewBox.innerHTML=`<div class="muted">لا توجد نتائج.</div>`;
+    return;
+  }
+
+  filtered.forEach(q=>{
+    const card=document.createElement("div");
+    card.className="q";
+    card.innerHTML=`<b>#${q.id}</b> <span class="pill">${q.type}</span><div style="margin-top:6px">${q.q}</div>`;
+
+    if(q.type==="mcq" && Array.isArray(q.choices)){
+      const l=document.createElement("div");
+      l.className="panel";
+      l.style.marginTop="10px";
+      l.innerHTML = `<b>الخيارات:</b><br>` + q.choices.map((c,i)=>`${i+1}) ${escapeHtml(c)}`).join("<br>");
+      card.appendChild(l);
+    }
+
+    if(q.type==="match"){
+      const wrap=document.createElement("div");
+      wrap.className="grid2";
+      wrap.style.marginTop="10px";
+
+      const left=document.createElement("div");
+      left.className="panel";
+      left.innerHTML = `<h4>القائمة (أ)</h4>` + (q.matchLeft||[]).map((x,i)=>`${i+1}) ${escapeHtml(x)}`).join("<br>");
+
+      // ✅ (ب) عمودي في المراجعة
+      const right=document.createElement("div");
+      right.className="panel";
+      right.innerHTML = `<h4>القائمة (ب)</h4>` + (q.matchRight||[]).map((x,i)=>`${i+1}) ${escapeHtml(x)}`).join("<br>");
+
+      wrap.appendChild(left);
+      wrap.appendChild(right);
+      card.appendChild(wrap);
+    }
+
+    const ans=document.createElement("pre");
+    ans.className="ans ok";
+    ans.style.whiteSpace="pre-wrap";
+    ans.textContent=answerText(q);
+
+    if(mode==="all"){
+      card.appendChild(ans);
+    }else if(mode==="oneclick"){
+      const btn=document.createElement("button");
+      btn.className="soft";
+      btn.textContent="إظهار الإجابة";
+      btn.onclick=()=>{
+        if(ans.parentNode){ ans.remove(); btn.textContent="إظهار الإجابة"; }
+        else{ card.appendChild(ans); btn.textContent="إخفاء الإجابة"; }
+      };
+      card.appendChild(document.createElement("div")).appendChild(btn);
+    }else{
+      const hint=document.createElement("div");
+      hint.className="muted";
+      hint.style.marginTop="8px";
+      hint.textContent="(الإجابة مخفية)";
+      card.appendChild(hint);
+    }
+
+    reviewBox.appendChild(card);
+  });
+}
+
+/* ========= تشغيل افتراضي =========
+   - افتح الصفحة على وضع المراجعة
+   - اعرض كل الأسئلة + كل الإجابات تلقائيًا
+*/
+(function init(){
+  // افتراضي: مراجعة + إظهار الكل
+  showMode.value = "all";
+  type.value = "all";
+  setMode("review");
+  renderReview();
+  prepareResumeUI(); // لو احتجت استئناف لاحقًا عند التحويل للاختبار
+})();
 </script>
+
 </body>
 </html>

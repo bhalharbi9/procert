@@ -10,7 +10,7 @@ window.QUESTION_BANK = [
     // 1) صواب / خطأ (1 - 40)
     // =========================
     { id: 1, type: "tf", q: "شهادة CISMP تهدف إلى تزويد المتدرب بمبادئ إدارة أمن المعلومات.", answer: "T" },
-    { id: 2, type: "tf", q: "الجهة المانحة لشهادة CISMP هي ISACA.", answer: "F" },
+    { id: 2, type: "tf", q: "الجهة المانحة لشهادة CISMP هي ISACA.", answer: "T" },
     { id: 3, type: "tf", q: "اختبار CISM يتكون من 150 سؤال اختيار من متعدد.", answer: "T" },
     { id: 4, type: "tf", q: "شهادة CISM تركز على الجوانب الإدارية أكثر من التقنية.", answer: "T" },
     { id: 5, type: "tf", q: "شهادة CompTIA CySA+ موجهة لمحللي الأمن السيبراني.", answer: "T" },
@@ -240,4 +240,5 @@ window.QUESTION_BANK = [
       answer: [0,1,2,3]
     },
   ];
+
   
